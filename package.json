@@ -1,0 +1,33 @@
+{
+	"name": "json-map",
+	"version": "0.1.0",
+	"description": "Utility to map one JavaScript object to another",
+	"main": "index.js",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/jrajav/json-map.git"
+	},
+	"dependencies": {
+		"esprima": "~1.2.2",
+		"traverse": "~0.6.6",
+		"lodash": "~2.4.1"
+	},
+	"devDependencies": {
+		"mocha": "~1.19.0",
+		"chai": "~1.9.1",
+		"eslint": "~0.6.2"
+	},
+	"scripts": {
+		"test": "node_modules/eslint/bin/eslint.js . && node_modules/mocha/bin/mocha test/test.js"
+	},
+	"keywords": [
+		"pojo",
+		"json",
+		"object",
+		"map",
+		"convert"
+	],
+	"author": "Jonathan Rajavuori <jrajav@gmail.com>",
+	"license": "MIT",
+	"readmeFilename": "README.md"
+}
