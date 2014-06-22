@@ -136,17 +136,28 @@ var jsonmap = function ( pathMap, valueMap ) {
 
 				_.some( pathMapFns, function ( pathMapFn ) {
 
+					var abort = false
+					var nomap = function () {
+						abort = true
+					}
+					
 					var destRefList = pathMapFn( sourceRefList )
 
 					if ( destRefList ) {
 
 						_.each( valueMapFns, function ( valueMapFn ) {
 
-							node = valueMapFn( node )
+							node = valueMapFn( node, nomap )
+
+							return !abort
 
 						})
 
-						destTraverse.set( destRefList, node )
+						if ( !abort ) {
+
+							destTraverse.set( destRefList, node )
+
+						}
 
 					}
 
@@ -227,6 +238,24 @@ jsonmap.val = function ( sourceValue, destinationValue ) {
 		if ( _.isEqual( value, sourceValue ) ) {
 
 			return destinationValue
+
+		} else {
+
+			return value
+
+		}
+
+	}
+
+}
+
+jsonmap.nomap = function ( nomapValue ) {
+
+	return function ( value, abort ) {
+
+		if ( _.isEqual( value, nomapValue ) ) {
+
+			abort()
 
 		} else {
 
