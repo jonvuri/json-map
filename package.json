@@ -19,7 +19,7 @@
 		"visionmedia-jscoverage": "~1.0.0"
 	},
 	"scripts": {
-		"test": "node_modules/eslint/bin/eslint.js . && node_modules/mocha/bin/mocha --reporter spec test/test.js"
+		"test": "./test.sh && ./coverage.sh"
 	},
 	"keywords": [
 		"pojo",
