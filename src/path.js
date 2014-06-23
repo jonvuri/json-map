@@ -107,7 +107,7 @@ module.exports = function path( fromPath, toPath ) {
 		if ( _.isEqual( refList, from ) ) {
 			return to
 		} else {
-			return false
+			return null
 		}
 
 	}

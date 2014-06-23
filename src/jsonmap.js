@@ -153,35 +153,41 @@ jsonmap.transform.compose = function transformCompose( transforms ) {
 }
 
 
-//// Shorthand callbacks ////
+//// Map builders ////
 
-/// refMaps
 
-// Ditch this and its require if you don't want to depend on esprima
-jsonmap.path = path
+/// refMap builders
 
-jsonmap.ref = function ref( match ) {
+jsonmap.ref = function ref( from, to ) {
+
+	if ( !to ) {
+		to = from
+	}
 
 	return function ( refList ) {
 
-		if ( _.isEqual( match, refList ) ) {
-			return refList
+		if ( _.isEqual( refList, from ) ) {
+			return to
 		} else {
-			return false
+			return null
 		}
 
 	}
 
 }
 
-/// valueMaps
+// Ditch this and its require if you don't want to depend on esprima
+jsonmap.path = path
 
-jsonmap.val = function val( match, mapTo ) {
+
+/// valueMap builders
+
+jsonmap.val = function val( from, to ) {
 
 	return function ( value ) {
 
-		if ( _.isEqual( match, value ) ) {
-			return mapTo
+		if ( _.isEqual( value, from ) ) {
+			return to
 		} else {
 			return value
 		}
@@ -190,11 +196,11 @@ jsonmap.val = function val( match, mapTo ) {
 
 }
 
-jsonmap.nomap = function nomap( match ) {
+jsonmap.nomap = function nomap( from ) {
 
 	return function ( value, abort ) {
 
-		if ( _.isEqual( match, value ) ) {
+		if ( _.isEqual( from, value ) ) {
 			abort()
 		} else {
 			return value
