@@ -1,270 +1,201 @@
 'use strict'
 
 
-var util      =  require( 'util' )
+var traverse = require( 'traverse' )
+var _        = require( 'lodash' )
 
-var esprima   =  require( 'esprima' )
-var traverse  =  require( 'traverse' )
-var _         =  require( 'lodash' )
-
-
-function pathToReferenceList( path ) {
-
-	var parsedPath = esprima.parse( path )
-	var refList = []
+var fail     = require( './fail' )
+var path     = require( './path' )
 
 
-	function fail() {
-		throw 'Error processing path: ' + path
+function mapOrTransform( transform, refMap, valueMap ) {
+
+	var valueMaps
+
+
+	if ( !_.isFunction( refMap ) ) {
+		fail( 'not a function:', refMap )
 	}
 
-	function r( expression ) {
-
-		if ( expression.type === 'ArrayExpression' ) {
-
-			if ( expression.elements.length !== 1 ) {
-				fail()
-			}
-
-			refList.push( expression.elements[0].value )
-
-		} else if ( expression.type === 'Identifier' ) {
-
-			refList.push( expression.name )
-
-		} else if ( expression.type === 'MemberExpression' ) {
-
-			r( expression.object )
-
-			if ( expression.property.type === 'Identifier' ) {
-
-				refList.push( expression.property.name )
-
-			} else if ( expression.property.type === 'Literal' ) {
-
-				refList.push( expression.property.value )
-
-			} else {
-				fail()
-			}
-
-		} else {
-			fail()
-		}
-
-	}
-
-
-	if ( parsedPath.body.length !== 1 ) {
-		fail()
-	} else if ( parsedPath.body[0].type !== 'ExpressionStatement' ) {
-		fail()
-	} else {
-
-		r( parsedPath.body[0].expression )
-
-	}
-
-
-	return refList
-
-}
-
-
-var jsonmap = function ( pathMap, valueMap ) {
-
-	var pathMapFns
-	var valueMapFns
-
-
-	if ( _.isArray( pathMap ) ) {
-
-		pathMapFns = pathMap
-
-	} else if ( _.isFunction( pathMap ) ) {
-
-		pathMapFns = [ pathMap ]
-
-	} else {
-		throw '[json-map] pathMap is not an array or function: ' + util.inspect( pathMap )
-	}
-
-
-	if ( arguments.length === 1 ) {
-
-		valueMapFns = []
-
+	if ( !valueMap ) {
+		valueMaps = []
 	} else if ( _.isArray( valueMap ) ) {
-
-		valueMapFns = valueMap
-
-	} else if ( _.isFunction( pathMap ) ) {
-
-		valueMapFns = [ valueMap ]
-
+		valueMaps = valueMap
+	} else if ( _.isFunction( refMap ) ) {
+		valueMaps = [ valueMap ]
 	} else {
-		throw '[json-map] valueMap is not an array or function: ' + util.inspect( valueMap )
+		fail( 'not an array or function:', valueMap )
 	}
 
 
+	return function map( object ) {
 
-	return function ( source, destination ) {
+		var destination
 
-		var destTraverse
 
-		if ( !_.isObject( source ) ) {
-			throw '[json-map] source not an object: ' + util.inspect( source )
-		}
-
-		if ( arguments.length === 1 ) {
-
-			destination = {}
-
-		} else if ( !_.isObject( destination ) ) {
-			throw '[json-map] destination not an object: ' + util.inspect( destination )
+		if ( !_.isObject( object ) ) {
+			fail( 'not an object:', object )
 		}
 
 
-		destTraverse = traverse( destination )
+		object = traverse( object )
+		
+		if ( transform ) {
+			destination = object
+		} else {
+			destination = traverse( map.object || {} )
+		}
 
 
-		traverse( source ).forEach( function ( node ) {
+		object.forEach( function ( node ) {
 
-			var sourceRefList = this.path
+			var refList
+			var nomap = false
 
-			if ( sourceRefList.length > 0 ) {
+			function abort() {
+				nomap = true
+			}
 
-				_.some( pathMapFns, function ( pathMapFn ) {
+			if ( this.notRoot ) {
 
-					var abort = false
-					var nomap = function () {
-						abort = true
-					}
-					
-					var destRefList = pathMapFn( sourceRefList )
+				refList = refMap( this.path )
 
-					if ( destRefList ) {
+				if ( refList ) {
 
-						_.each( valueMapFns, function ( valueMapFn ) {
+					_.each( valueMaps, function ( valueMap ) {
 
-							node = valueMapFn( node, nomap )
+						node = valueMap( node, abort )
 
-							return !abort
+						return !nomap
 
-						})
+					})
 
-						if ( !abort ) {
+					if ( !nomap ) {
 
-							destTraverse.set( destRefList, node )
-
+						if ( transform ) {
+							this.remove()
 						}
+						
+						destination.set( refList, node )
 
 					}
 
-					return destRefList
-
-				} )
+				}
 
 			}
 
 		} )
 
 
-		return destination
+		return destination.value
 
 	}
 
 }
 
-jsonmap.path = function ( sourcePath, destinationPath ) {
 
-	var matchSourceRefList = pathToReferenceList( sourcePath )
-	var destRefList
+function verifyCallableList( list ) {
 
-	if ( arguments.length === 1 ) {
+	_.each( list, function ( x, i ) {
 
-		destRefList = matchSourceRefList
+		if ( !_.isFunction( x ) ) {
+			fail( 'Index', i, 'is not a function:', x )
+		}
 
-	} else {
+	})
 
-		destRefList = pathToReferenceList( destinationPath )
+}
+
+
+var jsonmap = module.exports = {}
+
+
+jsonmap.map = function map( refMap, valueMap ) {
+	return mapOrTransform( false, refMap, valueMap )
+}
+
+jsonmap.map.compose = function mapCompose( maps ) {
+
+	verifyCallableList( maps )
+
+	return function ( object ) {
+
+		return _.reduce( maps, function ( result, map ) {
+			map.object = result
+			return map( object )
+		}, {} )
 
 	}
 
-	return function ( sourceRefList ) {
+}
 
-		if ( _.isEqual( sourceRefList, matchSourceRefList ) ) {
 
-			return destRefList
+jsonmap.transform = function map( refMap, valueMap ) {
+	return mapOrTransform( true, refMap, valueMap )
+}
 
+jsonmap.transform.compose = function transformCompose( transforms ) {
+
+	verifyCallableList( transforms )
+
+	return function ( object ) {
+
+		return _.reduce( transforms, function ( result, transform ) {
+			return transform( result )
+		}, object )
+
+	}
+
+}
+
+
+//// Shorthand callbacks ////
+
+/// refMaps
+
+// Ditch this and its require if you don't want to depend on esprima
+jsonmap.path = path
+
+jsonmap.ref = function ref( match ) {
+
+	return function ( refList ) {
+
+		if ( _.isEqual( match, refList ) ) {
+			return refList
 		} else {
-
 			return false
-
 		}
 
 	}
 
 }
 
-jsonmap.ref = function ( refList ) {
+/// valueMaps
 
-	return function ( sourceRefList ) {
-
-		if ( _.isEqual( sourceRefList, refList ) ) {
-
-			return sourceRefList
-
-		} else {
-
-			return false
-
-		}
-
-	}
-
-}
-
-jsonmap.all = function () {
-
-	return _.identity
-
-}
-
-jsonmap.val = function ( sourceValue, destinationValue ) {
+jsonmap.val = function val( match, mapTo ) {
 
 	return function ( value ) {
 
-		if ( _.isEqual( value, sourceValue ) ) {
-
-			return destinationValue
-
+		if ( _.isEqual( match, value ) ) {
+			return mapTo
 		} else {
-
 			return value
-
 		}
 
 	}
 
 }
 
-jsonmap.nomap = function ( nomapValue ) {
+jsonmap.nomap = function nomap( match ) {
 
 	return function ( value, abort ) {
 
-		if ( _.isEqual( value, nomapValue ) ) {
-
+		if ( _.isEqual( match, value ) ) {
 			abort()
-
 		} else {
-
 			return value
-
 		}
 
 	}
 
 }
-
-module.exports = jsonmap

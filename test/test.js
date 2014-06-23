@@ -5,231 +5,302 @@
 
 var expect = require( 'chai' ).expect
 
-var jsonmap = require( '../index' )
+var jsonmap = require( '../build/index' )
 
 
-describe( 'json-map', function ( ) {
+function identity( x ) {
+	return x
+}
 
 
-	it( 'should apply path maps', function () {
-
-		var source, pathMap, result
+describe( 'json-map', function () {
 
 
-		source = { foo: 0 }
+	describe( '#map', function () {
 
-		pathMap = function ( refList ) {
 
-			return refList.map( function ( ref ) {
+		it( 'should apply ref maps', function () {
 
-				return 'pre/' + ref
+			var source, refMap, result
+
+
+			source = { color: 'orange' }
+
+			refMap = function ( refList ) {
+
+				return refList.map( function ( ref ) {
+					return 'pre_' + ref
+				} )
+
+			}
+
+			result = jsonmap.map( refMap )( source )
+
+
+			expect( result ).to.deep.equal( { 'pre_color': 'orange' } )
+
+		} )
+
+
+		it( 'should apply value maps', function () {
+
+			var source, valueMap, result
+
+
+			source = { color: 'orange' }
+
+			valueMap = function () {
+				return 'blue'
+			}
+
+			result = jsonmap.map( identity, valueMap )( source )
+
+
+			expect( result ).to.deep.equal( { color: 'blue' } )
+
+		} )
+
+
+		it( 'should apply multiple value maps', function () {
+
+			var source, valueMaps, result
+
+
+			source = { colorA: 1, colorB: 2 }
+
+			valueMaps = [
+
+				function ( value ) {
+
+					if ( value === 1 ) {
+						return 'orange'
+					} else {
+						return value
+					}
+
+				},
+
+				function ( value ) {
+
+					if ( value === 2 ) {
+						return 'blue'
+					} else {
+						return value
+					}
+
+				}
+
+			]
+
+			result = jsonmap.map( identity, valueMaps )( source )
+
+
+			expect( result ).to.deep.equal( { colorA: 'orange', colorB: 'blue' } )
+
+		} )
+
+
+		it( 'should not map when valueMap calls abort', function () {
+
+			var source, valueMap, result
+
+
+			source = { colorA: 'orange', colorB: 'blue' }
+
+			valueMap = function ( value, abort ) {
+
+				if ( value === 'blue' ) {
+					abort()
+				} else {
+					return value
+				}
+
+			}
+
+			result = jsonmap.map( identity, valueMap )( source )
+
+
+			expect( result ).to.deep.equal( { colorA: 'orange' } )
+
+		} )
+
+
+		describe( '#compose', function () {
+
+
+			it( 'should apply multiple maps', function () {
+
+				var source, maps, result
+
+
+				source = { colorA: 'orange', colorB: 'blue', colorC: 'red' }
+
+				maps = [
+					jsonmap.map( jsonmap.path( 'colorA' ) ),
+					jsonmap.map( jsonmap.path( 'colorB' ) )
+				]
+
+				result = jsonmap.map.compose( maps )( source )
+
+
+				expect( result ).to.deep.equal( { colorA: 'orange', colorB: 'blue' } )
 
 			} )
 
-		}
 
-		result = jsonmap( pathMap )( source )
+		} )
 
-
-		expect( result ).to.deep.equal( { 'pre/foo': 0 } )
 
 	} )
 
 
-	it( 'should apply first path map to return ref list', function () {
-
-		var source, pathMaps, result
+	describe( '#transform', function () {
 
 
-		source = { foo: 0 }
+		it( 'should transform source object', function () {
 
-		pathMaps = [
-
-			function ( refList ) {
-
-				return refList.map( function ( ref ) {
-
-					return 'one/' + ref
-
-				} )
-
-			},
-
-			function ( refList ) {
-
-				return refList.map( function ( ref ) {
-
-					return 'two/' + ref
-
-				} )
-
-			}
-
-		]
-
-		result = jsonmap( pathMaps )( source )
+			var source, result
 
 
-		expect( result ).to.deep.equal( { 'one/foo': 0 } )
+			source = { color: 'orange' }
+
+			result = jsonmap.transform( identity, jsonmap.val( 'orange', 'blue' ) )( source )
+
+
+			expect( source ).to.equal( result )
+			expect( result.color ).to.equal( 'blue' )
+
+		} )
+
+
+		describe( '#compose', function () {
+
+
+			it( 'should apply multiple transforms', function () {
+
+				var source, transforms, result
+
+
+				source = { colorA: 1, colorB: 2, colorC: 3 }
+
+				transforms = [
+					jsonmap.transform( jsonmap.path( 'colorA' ), jsonmap.val( 1, 'orange' ) ),
+					jsonmap.transform( jsonmap.path( 'colorB' ), jsonmap.val( 2, 'blue' ) )
+				]
+
+				result = jsonmap.transform.compose( transforms )( source )
+
+
+				expect( source ).to.equal( result )
+				expect( result.colorA ).to.equal( 'orange' )
+				expect( result.colorB ).to.equal( 'blue' )
+				expect( result.colorC ).to.equal( 3 )
+
+			} )
+
+
+		} )
+
 
 	} )
 
 
-	it( 'should apply jsonmap.path map', function () {
-
-		var source, path, result
+	describe( '#path', function () {
 
 
-		source = { foo: 0 }
+		it( 'should apply to map', function () {
 
-		path = jsonmap.path
-
-		result = jsonmap( path( 'foo', 'bar' ) )( source )
+			var source, result
 
 
-		expect( result ).to.deep.equal( { bar: 0 } )
+			source = { color: 'orange' }
+
+			result = jsonmap.map( jsonmap.path( 'color', 'hue' ) )( source )
+
+
+			expect( result ).to.deep.equal( { hue: 'orange' } )
+
+		} )
+
+		it( 'should apply as identity (single parameter)', function () {
+
+			var source, result
+
+
+			source = { color: 'orange', shade: 'amber' }
+
+			result = jsonmap.map( jsonmap.path( 'color' ) )( source )
+
+
+			expect( result ).to.deep.equal( { color: 'orange' } )
+
+		} )
+
 
 	} )
 
 
-	it( 'should apply single-parameter jsonmap.path map', function () {
-
-		var source, path, result
+	describe( '#ref', function () {
 
 
-		source = { foo: 0, bar: 1 }
+		it( 'should apply to map', function () {
 
-		path = jsonmap.path
-
-		result = jsonmap( path( 'foo' ) )( source )
+			var source, result
 
 
-		expect( result ).to.deep.equal( { foo: 0 } )
+			source = { color: 'orange', shade: 'amber' }
+
+			result = jsonmap.map( jsonmap.ref( [ 'color' ] ) )( source )
+
+
+			expect( result ).to.deep.equal( { color: 'orange' } )
+
+		} )
+
 
 	} )
 
 
-	it( 'should apply jsonmap.ref map', function () {
-
-		var source, ref, result
+	describe( '#val', function () {
 
 
-		source = { foo: 0, bar: 1 }
+		it( 'should apply to map', function () {
 
-		ref = jsonmap.ref
-
-		result = jsonmap( ref( [ 'bar' ] ) )( source )
+			var source, valueMaps, result
 
 
-		expect( result ).to.deep.equal( { bar: 1 } )
+			source = { colorA: 1, colorB: 2 }
+
+			valueMaps = [ jsonmap.val( 1, 'orange' ), jsonmap.val( 2, 'blue' ) ]
+
+			result = jsonmap.map( identity, valueMaps )( source )
+
+
+			expect( result ).to.deep.equal( { colorA: 'orange', colorB: 'blue' } )
+
+		} )
+
 
 	} )
 
 
-	it( 'should apply jsonmap.all map', function () {
-
-		var source, all, result
+	describe( '#nomap', function () {
 
 
-		source = { foo: 0 }
+		it( 'should stop map from occuring', function () {
 
-		all = jsonmap.all
-
-		result = jsonmap( all() )( source )
+			var source, result
 
 
-		expect( result ).to.deep.equal( { foo: 0 } )
+			source = { colorA: 'orange', colorB: 'blue' }
 
-	} )
-
-
-	it( 'should apply value maps', function () {
-
-		var source, all, valueMap, result
+			result = jsonmap.map( identity, jsonmap.nomap( 'blue' ) )( source )
 
 
-		source = { foo: 0 }
+			expect( result ).to.deep.equal( { colorA: 'orange' } )
 
-		all = jsonmap.all
+		} )
 
-		valueMap = function () {
-
-			return false
-
-		}
-
-		result = jsonmap( all(), valueMap )( source )
-
-
-		expect( result ).to.deep.equal( { foo: false } )
-
-	} )
-
-
-	it( 'should apply multiple value maps', function () {
-
-		var source, all, valueMaps, result
-
-
-		source = { foo: 0, bar: 1 }
-
-		all = jsonmap.all
-
-		valueMaps = [
-
-			function ( value ) {
-
-				if ( value === 0 ) {
-
-					return false
-
-				} else {
-
-					return value
-
-				}
-
-			},
-
-			function ( value ) {
-
-				if ( value === 1 ) {
-
-					return true
-
-				} else {
-
-					return value
-
-				}
-
-			}
-
-		]
-
-		result = jsonmap( all(), valueMaps )( source )
-
-
-		expect( result ).to.deep.equal( { foo: false, bar: true } )
-
-	} )
-
-
-	it( 'should apply jsonmap.val map', function () {
-
-		var source, all, val, result
-
-
-		source = { foo: 0, bar: 1 }
-
-		all = jsonmap.all
-
-		val = jsonmap.val
-
-		result = jsonmap( all(), [ val( 0, false ), val( 1, true ) ] )( source )
-
-
-		expect( result ).to.deep.equal( { foo: false, bar: true } )
 
 	} )
 

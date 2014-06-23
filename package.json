@@ -18,7 +18,7 @@
 		"eslint": "~0.6.2"
 	},
 	"scripts": {
-		"test": "node_modules/eslint/bin/eslint.js . && node_modules/mocha/bin/mocha test/test.js"
+		"test": "node_modules/eslint/bin/eslint.js . && node_modules/mocha/bin/mocha --reporter spec test/test.js"
 	},
 	"keywords": [
 		"pojo",
