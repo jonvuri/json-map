@@ -62,6 +62,10 @@ function mapOrTransform( transform, refMap, valueMap ) {
 
 				if ( refList ) {
 
+					if ( !_.isArray( refList ) ) {
+						fail( 'not an array', refList )
+					}
+
 					_.each( valueMaps, function ( valueMap ) {
 
 						node = valueMap( node, abort )
