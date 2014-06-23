@@ -5,7 +5,7 @@
 
 var expect = require( 'chai' ).expect
 
-var jsonmap = require( '../build/index' )
+var jsonmap = require( '../build/jsonmap' )
 
 
 function identity( x ) {
@@ -37,7 +37,7 @@ describe( 'json-map', function () {
 			result = jsonmap.map( refMap )( source )
 
 
-			expect( result ).to.deep.equal( { 'pre_color': 'orange' } )
+			expect( result ).to.deep.equal( { 'pre_color': 'orage' } )
 
 		} )
 

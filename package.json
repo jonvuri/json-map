@@ -2,7 +2,7 @@
 	"name": "json-map",
 	"version": "0.1.1",
 	"description": "Utility to map one JavaScript object to another",
-	"main": "index.js",
+	"main": "src/jsonmap.js",
 	"repository": {
 		"type": "git",
 		"url": "git://github.com/jrajav/json-map.git"
@@ -15,7 +15,8 @@
 	"devDependencies": {
 		"mocha": "~1.19.0",
 		"chai": "~1.9.1",
-		"eslint": "~0.6.2"
+		"eslint": "~0.6.2",
+		"visionmedia-jscoverage": "~1.0.0"
 	},
 	"scripts": {
 		"test": "node_modules/eslint/bin/eslint.js . && node_modules/mocha/bin/mocha --reporter spec test/test.js"
