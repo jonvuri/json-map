@@ -151,6 +151,23 @@ describe( 'json-map', function () {
 		} )
 
 
+		it( 'should fail when refMap returns a truthy value that is not an array', function () {
+
+			var message = 'not an array: \'this string is not an array\''
+
+			function badRefMap() {
+				return 'this string is not an array'
+			}
+
+			function nonArrayRefMap() {
+				jsonmap.map( badRefMap )( { color: 'orange' } )
+			}
+
+			expect( nonArrayRefMap ).to.throw( message )
+
+		} )
+
+
 		it( 'should fail when map is called on a non-object', function () {
 
 			var message = 'not an object: \'this string is not an object\''
@@ -413,7 +430,7 @@ describe( 'json-map', function () {
 			var source, result
 
 
-			source = { color: 'orange' }
+			source = { color: 'orange', shade: 'amber' }
 
 			result = jsonmap.map( jsonmap.path( 'color', 'hue' ) )( source )
 
@@ -444,6 +461,21 @@ describe( 'json-map', function () {
 
 
 		it( 'should apply to map', function () {
+
+			var source, result
+
+
+			source = { color: 'orange', shade: 'amber' }
+
+			result = jsonmap.map( jsonmap.ref( [ 'color' ], [ 'hue' ] ) )( source )
+
+
+			expect( result ).to.deep.equal( { hue: 'orange' } )
+
+		} )
+
+
+		it( 'should apply as identity (single parameter)', function () {
 
 			var source, result
 
