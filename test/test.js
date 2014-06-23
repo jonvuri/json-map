@@ -37,7 +37,7 @@ describe( 'json-map', function () {
 			result = jsonmap.map( refMap )( source )
 
 
-			expect( result ).to.deep.equal( { 'pre_color': 'orage' } )
+			expect( result ).to.deep.equal( { 'pre_color': 'orange' } )
 
 		} )
 
@@ -125,6 +125,45 @@ describe( 'json-map', function () {
 		} )
 
 
+		it( 'should fail when a non-function is passed as refMap', function () {
+
+			var message = 'not a function: \'this string is not a function\''
+
+			function nonFunctionRefMap() {
+				jsonmap.map( 'this string is not a function' )
+			}
+
+			expect( nonFunctionRefMap ).to.throw( message )
+
+		} )
+
+
+		it( 'should fail when a value not an array or function is passed as valueMap', function () {
+
+			var message = 'not an array or function: \'this string is not an array or function\''
+
+			function nonFunctionValueMap() {
+				jsonmap.map( identity, 'this string is not an array or function' )
+			}
+
+			expect( nonFunctionValueMap ).to.throw( message )
+
+		} )
+
+
+		it( 'should fail when map is called on a non-object', function () {
+
+			var message = 'not an object: \'this string is not an object\''
+
+			function nonObjectMap() {
+				jsonmap.map( identity )( 'this string is not an object' )
+			}
+
+			expect( nonObjectMap ).to.throw( message )
+
+		} )
+
+
 		describe( '#compose', function () {
 
 
@@ -144,6 +183,22 @@ describe( 'json-map', function () {
 
 
 				expect( result ).to.deep.equal( { colorA: 'orange', colorB: 'blue' } )
+
+			} )
+
+
+			it( 'should fail when passed non-functions', function () {
+
+				var message = 'index 1 is not a function: \'this string is not a function\''
+
+				function nonFunctionCompose() {
+					jsonmap.map.compose( [
+						jsonmap.map( identity ),
+						'this string is not a function'
+					] )
+				}
+
+				expect( nonFunctionCompose ).to.throw( message )
 
 			} )
 
@@ -199,6 +254,22 @@ describe( 'json-map', function () {
 			} )
 
 
+			it( 'should fail when passed non-functions', function () {
+
+				var message = 'index 1 is not a function: \'this string is not a function\''
+
+				function nonFunctionCompose() {
+					jsonmap.transform.compose( [
+						jsonmap.transform( identity ),
+						'this string is not a function'
+					] )
+				}
+
+				expect( nonFunctionCompose ).to.throw( message )
+
+			} )
+
+
 		} )
 
 
@@ -206,6 +277,135 @@ describe( 'json-map', function () {
 
 
 	describe( '#path', function () {
+
+
+		it( 'should convert dot notation to ref list', function () {
+
+			var refList = [ 'color', 'hue' ]
+
+			expect( jsonmap.path( 'color.hue' )( refList ) ).to.deep.equal( refList )
+
+		} )
+
+
+		it( 'should convert member notation to ref list', function () {
+
+			var refList = [ 'color', 'hue' ]
+
+			expect( jsonmap.path( 'color["hue"]' )( refList ) ).to.deep.equal( refList )
+
+		} )
+
+
+		it( 'should convert member notation with number to ref list', function () {
+
+			var refList = [ 'color', '1' ]
+
+			expect( jsonmap.path( 'color[1]' )( refList ) ).to.deep.equal( refList )
+
+		} )
+
+
+		it( 'should convert path with leading array expression to ref list', function () {
+
+			var refList = [ '1', 'two' ]
+
+			expect( jsonmap.path( '["1"]["two"]' )( refList ) ).to.deep.equal( refList )
+			expect( jsonmap.path( '["1"].two' )( refList ) ).to.deep.equal( refList )
+			expect( jsonmap.path( '[1].two' )( refList ) ).to.deep.equal( refList )
+
+		} )
+
+
+		it( 'should fail to convert member notation with symbol', function () {
+
+			var message = 'couldn\'t convert path to reference list: \'color[hue]\''
+
+			function badPath() {
+				jsonmap.path( 'color[hue]' )
+			}
+
+			expect( badPath ).to.throw( message )
+
+		} )
+
+
+		it( 'should fail to convert array notation with multiple elements', function () {
+
+			var message = 'couldn\'t convert path to reference list: \'["color", "hue"]\''
+
+			function badPath() {
+				jsonmap.path( '["color", "hue"]' )
+			}
+
+			expect( badPath ).to.throw( message )
+
+		} )
+
+
+		it( 'should fail to convert array notation with element not a string or number', function () {
+
+			var message = 'couldn\'t convert path to reference list: \'[{}]\''
+
+			function badPath() {
+				jsonmap.path( '[{}]' )
+			}
+
+			expect( badPath ).to.throw( message )
+
+		} )
+
+
+		it( 'should fail to convert expression with syntax error', function () {
+
+			var message = 'couldn\'t convert path to reference list: \'color["hue"\''
+
+			function badPath() {
+				jsonmap.path( 'color["hue"' )
+			}
+
+			expect( badPath ).to.throw( message )
+
+		} )
+
+
+		it( 'should fail to convert non-reference expression', function () {
+
+			var message = 'couldn\'t convert path to reference list: \'1 + 2\''
+
+			function badPath() {
+				jsonmap.path( '1 + 2' )
+			}
+
+			expect( badPath ).to.throw( message )
+
+		} )
+
+
+		it( 'should fail to convert non-expression', function () {
+
+			var message = 'couldn\'t convert path to reference list: \'var x = 1\''
+
+			function badPath() {
+				jsonmap.path( 'var x = 1' )
+			}
+
+			expect( badPath ).to.throw( message )
+
+		} )
+
+
+		it( 'should fail to convert empty expression', function () {
+
+			var message = 'path cannot be empty: \'\''
+
+			function badPath() {
+				jsonmap.path( '' )
+			}
+
+			expect( badPath ).to.throw( message )
+
+		} )
 
 
 		it( 'should apply to map', function () {

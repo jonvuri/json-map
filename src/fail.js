@@ -4,9 +4,9 @@
 var util = require( 'util' )
 
 
-module.exports = function fail() {
+module.exports = function fail( message, object ) {
 
-	var error = new Error( [].map.call( arguments, util.inspect ).join(' ') )
+	var error = new Error( message + ': ' + util.inspect( object ) )
 
 	error.name = 'JsonMapError'
 

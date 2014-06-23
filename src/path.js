@@ -14,18 +14,34 @@ function convertPathToRefList( path ) {
 
 
 	function convertFail() {
-		fail( 'Couldn\'t convert path to reference list:', path )
+		fail( 'couldn\'t convert path to reference list', path )
+	}
+
+	function isValidMemberRef( node ) {
+		return node.type === 'Literal' && _.isString( node.value ) || _.isNumber( node.value )
 	}
 
 	function getRef( expression ) {
 
+		var element, property
+
 		if ( expression.type === 'ArrayExpression' ) {
 
-			if ( expression.elements.length !== 1 ) {
-				convertFail()
-			}
+			if ( expression.elements.length === 1 ) {
 
-			refList.push( expression.elements[0].value )
+				element = expression.elements[0]
+
+				if ( isValidMemberRef( element ) ) {
+					refList.push( String( element.value ) )
+				} else {
+					convertFail()
+				}
+
+			} else {
+
+				convertFail()
+
+			}
 
 		} else if ( expression.type === 'Identifier' ) {
 
@@ -35,10 +51,12 @@ function convertPathToRefList( path ) {
 
 			getRef( expression.object )
 
-			if ( expression.property.type === 'Identifier' ) {
-				refList.push( expression.property.name )
-			} else if ( expression.property.type === 'Literal' ) {
-				refList.push( expression.property.value )
+			property = expression.property
+
+			if ( !expression.computed && property.type === 'Identifier' ) {
+				refList.push( property.name )
+			} else if ( isValidMemberRef( property ) ) {
+				refList.push( String( property.value ) )
 			} else {
 				convertFail()
 			}
@@ -60,7 +78,7 @@ function convertPathToRefList( path ) {
 
 
 	if ( parsedPath.body.length !== 1 ) {
-		convertFail()
+		fail( 'path cannot be empty', path )
 	} else if ( parsedPath.body[0].type !== 'ExpressionStatement' ) {
 		convertFail()
 	} else {

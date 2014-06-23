@@ -14,17 +14,17 @@ function mapOrTransform( transform, refMap, valueMap ) {
 
 
 	if ( !_.isFunction( refMap ) ) {
-		fail( 'not a function:', refMap )
+		fail( 'not a function', refMap )
 	}
 
 	if ( !valueMap ) {
 		valueMaps = []
 	} else if ( _.isArray( valueMap ) ) {
 		valueMaps = valueMap
-	} else if ( _.isFunction( refMap ) ) {
+	} else if ( _.isFunction( valueMap ) ) {
 		valueMaps = [ valueMap ]
 	} else {
-		fail( 'not an array or function:', valueMap )
+		fail( 'not an array or function', valueMap )
 	}
 
 
@@ -34,7 +34,7 @@ function mapOrTransform( transform, refMap, valueMap ) {
 
 
 		if ( !_.isObject( object ) ) {
-			fail( 'not an object:', object )
+			fail( 'not an object', object )
 		}
 
 
@@ -99,7 +99,7 @@ function verifyCallableList( list ) {
 	_.each( list, function ( x, i ) {
 
 		if ( !_.isFunction( x ) ) {
-			fail( 'Index', i, 'is not a function:', x )
+			fail( 'index ' + i + ' is not a function', x )
 		}
 
 	})
