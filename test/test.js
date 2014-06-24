@@ -61,6 +61,25 @@ describe( 'json-map', function () {
 		} )
 
 
+		it( 'should be called on all leaf nodes and only leaf nodes', function () {
+
+			var refCalls = [ [ 'color', 'hue' ], [ 'color', 'shade' ] ]
+
+			var object = { color: { hue: 'orange', shade: 'amber' } }
+
+			var result = []
+
+			function refMapTally( refList ) {
+				result.push( refList )
+			}
+
+			jsonmap.map( refMapTally )( object )
+
+			expect( result ).to.deep.equal( refCalls )
+
+		} )
+
+
 		it( 'should apply multiple value maps', function () {
 
 			var source, valueMaps, result
@@ -486,6 +505,28 @@ describe( 'json-map', function () {
 
 
 			expect( result ).to.deep.equal( { color: 'orange' } )
+
+		} )
+
+
+	} )
+
+
+	describe( '#all', function () {
+
+
+		it( 'should apply to map', function () {
+
+			var source, result
+
+
+			source = { color: 'orange', shade: 'amber' }
+
+			result = jsonmap.map( jsonmap.all() )( source )
+
+
+			expect( result ).to.not.equal( source )
+			expect( result ).to.deep.equal( source )
 
 		} )
 

@@ -56,7 +56,7 @@ function mapOrTransform( transform, refMap, valueMap ) {
 				nomap = true
 			}
 
-			if ( this.notRoot ) {
+			if ( this.isLeaf && this.notRoot ) {
 
 				refList = refMap( this.path )
 
@@ -111,14 +111,12 @@ function verifyCallableList( list ) {
 }
 
 
-var jsonmap = module.exports = {}
 
-
-jsonmap.map = function map( refMap, valueMap ) {
+exports.map = function map( refMap, valueMap ) {
 	return mapOrTransform( false, refMap, valueMap )
 }
 
-jsonmap.map.compose = function mapCompose( maps ) {
+exports.map.compose = function mapCompose( maps ) {
 
 	verifyCallableList( maps )
 
@@ -134,11 +132,11 @@ jsonmap.map.compose = function mapCompose( maps ) {
 }
 
 
-jsonmap.transform = function map( refMap, valueMap ) {
+exports.transform = function map( refMap, valueMap ) {
 	return mapOrTransform( true, refMap, valueMap )
 }
 
-jsonmap.transform.compose = function transformCompose( transforms ) {
+exports.transform.compose = function transformCompose( transforms ) {
 
 	verifyCallableList( transforms )
 
@@ -158,7 +156,7 @@ jsonmap.transform.compose = function transformCompose( transforms ) {
 
 /// refMap builders
 
-jsonmap.ref = function ref( from, to ) {
+exports.ref = function ref( from, to ) {
 
 	if ( !to ) {
 		to = from
@@ -177,12 +175,20 @@ jsonmap.ref = function ref( from, to ) {
 }
 
 // Ditch this and its require if you don't want to depend on esprima
-jsonmap.path = path
+exports.path = path
+
+exports.all = function all() {
+
+	return function ( refList ) {
+		return refList
+	}
+
+}
 
 
 /// valueMap builders
 
-jsonmap.val = function val( from, to ) {
+exports.val = function val( from, to ) {
 
 	return function ( value ) {
 
@@ -196,7 +202,7 @@ jsonmap.val = function val( from, to ) {
 
 }
 
-jsonmap.nomap = function nomap( from ) {
+exports.nomap = function nomap( from ) {
 
 	return function ( value, abort ) {
 
@@ -209,3 +215,5 @@ jsonmap.nomap = function nomap( from ) {
 	}
 
 }
+
+module.exports = exports
