@@ -197,31 +197,19 @@ Combines `mapList`, an array of functions returned by **.map()**, into a single 
 var jsonmap = require( 'json-map' )
 var map = jsonmap.map
 var compose = jsonmap.map.compose
+var path = jsonmap.path
 var val = jsonmap.val
 
-var object = { front: { color: 1, shade: 2 }, back: { color: 2, shade: 1 } }
+var object = { options: { color: 2, position: 1 } }
 
-function colorRefMap( refList ) {
-	return refList[1] === 'color' && [ refList[0] + '_color' ]
-}
+var optionmap = compose( [
+	map( path( 'options.color', 'color' ), [ val( 1, 'orange' ), val( 2, 'blue' ) ] ),
+    map( path( 'options.position', 'position' ), [ val( 1, 'top' ), val( 2, 'bottom' )] )
+] )
 
-function shadeRefMap( refList ) {
-	return refList[1] === 'shade' && [ refList[0] + '_shade' ]
-}
-
-compose( [
-	map( colorRefMap, [ val( 1, 'orange' ), val( 2, 'blue' ) ] )
-    map( 
-
-map( all(), [ nomap( 0 ), val( 1, 'orange' ) ] )( object ) => { color: 'orange' }
+optionmap( object ) => { color: 'blue', position: 'top' }
 ```
 
 ## .transform.compose( transformList )
 
 Combines `transformList`, an array of functions returned by **.transform()**, into a single function that will apply them all at once.
-
-### Examples
-
-```js
-
-```
